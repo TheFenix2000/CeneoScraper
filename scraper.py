@@ -1,36 +1,63 @@
 import requests
 import json
+import os
 from bs4 import BeautifulSoup
 
-def get_cos():
-    pass
+def get_element(ancestor, selector = None, attribute = None, return_list = False):
+    try:
+        if return_list:
+            return [tag.text.strip() for tag in ancestor.select(selector)]
+        if not selector and attribute:
+            return ancestor[attribute].strip()
+        if selector and attribute:
+            return ancestor.select_one(selector)[attribute].strip()
+        return ancestor.select_one(selector).get_text().strip()
+    except (AttributeError, TypeError):
+        return None
+
+selectors = {
+    "opinion_id": (None, 'data-entry-id'),
+    "author": ('span.user-post__author-name',),
+    "recommendation": ('span.user-post__author-recomendation > em',),
+    "score": ('span.user-post__score-count',),
+    "purchased": ('span.user-post__score-count',),
+    "opinion_date": ('span.user-post__published > time:nth-child(1)', 'datetime'),
+    "purchase_date": ('span.user-post__published > time:nth-child(2)', 'datetime'),
+    "likes": ('button.vote-yes', 'data-total-vote'),
+    "dislikes": ('button.vote-no', 'data-total-vote'),
+    "content": ('div.user-post__text',),
+    "cons": ('div.review-feature__title--negatives ~ div.review-feature__item', None, True),
+    "pros": ('div.review-feature__title--positives ~ div.review-feature__item', None, True)
+}
+
 
 # product_code = input("Enter Product Code: ")
 product_code = "113897315"
 
 # url = "https://www.ceneo.pl/" + product_code + "#tab=reviews"
 url = f"https://www.ceneo.pl/{product_code}#tab=reviews"
-r = requests.get(url)
+opinions_all = []
 
-if r.ok:
-    page_dom = BeautifulSoup(r.text, 'html.parser')
-    opinions = page_dom.select("div.js_product-review")
+while url: 
+    print(url)
+    r = requests.get(url)
 
-    opinions_all = []
-    for opinion in opinions:
-        single_opinion = {
-            "opinion_id": opinion['data-entry-id'],
-            "author": opinion.select_one('span.user-post__author-name').get_text().strip(),
-            "recommendation": opinion.select_one('span.user-post__author-recomendation > em').get_text().strip(),
-            "score": opinion.select_one('span.user-post__score-count').get_text().strip(),
-            "purchased": opinion.select_one('div.review-pz').get_text().strip(),
-            "opinion_date": opinion.select_one('span.user-post__published > time:nth-child(1)')['datetime'].strip(),
-            "purchase_date": opinion.select_one('span.user-post__published > time:nth-child(2)')['datetime'].strip(),
-            "likes": opinion.select_one('button.vote-yes')['data-total-vote'].strip(),
-            "dislikes": opinion.select_one('button.vote-no')['data-total-vote'].strip(),
-            "content": opinion.select_one('div.user-post__text').get_text().strip(),
-            "cons": [tag.text.strip() for tag in opinion.select('div.review-feature__title--negatives ~ div.review-feature__item')],
-            "pros": [tag.text.strip() for tag in opinion.select('div.review-feature__title--positives ~ div.review-feature__item')]
-        }
-        opinions_all.append(single_opinion)
-    print(json.dumps(opinions_all, indent=4, ensure_ascii=False))
+    if r.status_code == requests.codes.ok:
+        page_dom = BeautifulSoup(r.text, 'html.parser')
+        opinions = page_dom.select("div.js_product-review")
+
+        for opinion in opinions:
+            single_opinion = {}
+            for key, value in selectors.items():
+                single_opinion[key] = get_element(opinion, *value)
+            opinions_all.append(single_opinion)
+    try: 
+        url = 'https://www.ceneo.pl'+get_element(page_dom, 'a.pagination__next', 'href')
+    except TypeError:
+        url = None
+        
+if not os.path.exists('./opinions'):
+    os.mkdir('./opinions')
+
+with open(f"opinions/{product_code}.json", "w", encoding='UTF-8') as jf:
+    json.dump(opinions_all, jf, indent=4, ensure_ascii=False)

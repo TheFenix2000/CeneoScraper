@@ -1,7 +1,7 @@
 # CeneoScraper
 A simple web scrapper written in python
 
-## Table of CSS Selectors and Variale Names
+## Table of CSS Selectors and Variable Names
 
 | **Składowa** | **Nazwa** | **Selektor** |
 | --- | --- | --- |
@@ -18,3 +18,12 @@ A simple web scrapper written in python
 | **Treść opinii** | content | div.user-post\_\_text |
 | **Wady** | cons | div.review-feature\_\_title—negatives ~ review-feature\_\_item |
 | **Zalety** | pros | div.review-feature\_\_title—positives ~ review-feature\_\_item |
+
+## Required libraries
+- Requests
+- BeautifulSoup
+- Os
+- Json
+- Pandas
+- Matplotlib
+- Numpy

@@ -14,12 +14,29 @@ stats = {
     'cons_count': opinions.cons.astype(bool).sum(),
     'average_score': opinions.score.mean()
 }
-print(f"""Dla produktu o kodzie {product_code} pobranych zostało {stats['opinions_count']} opinii/opinie. Dla {stats['pros_count']} opinii podana została lista zalet produktu, a dla {stats['cons_count']} opinii podana została lista jeego wad. Średia ocen produktu wynosi {stats['average_score']:.2f}.""")
+print(f"""Dla produktu o kodzie {product_code} pobranych zostało {stats['opinions_count']} opinii/opinie. Dla {stats['pros_count']} opinii podana została lista zalet produktu, a dla {stats['cons_count']} opinii podana została lista jego wad. Średia ocen produktu wynosi {stats['average_score']:.2f}.""")
 
 stars = opinions.score.value_counts().reindex(list(np.arange(0, 5.5, 0.5)), fill_value=0)
 stars.plot.bar()
-plt.show()
 
-#Na dodatkowe pkt:
-# - Zrobić wykres kołowy: dla ilu polecam, dla ilu nie polecam (drop na do value_counts() - nie pomijaj NaN)
-# - Utworzyć katalog plots i zapisywać wszystkie wykresy w katalogu i nie indeksować tego katalogu
+try:
+    os.mkdir("./figures")
+except FileExistsError:
+    pass
+
+plt.title("Wykres ocen produktu")
+plt.xlabel("Liczba gwiazdek")
+plt.ylabel("Liczba opinii")
+
+plt.savefig(f"./figures/{product_code}_score.png")
+plt.close()
+
+recommendation = opinions["recommendation"].value_counts(dropna = False)
+recommendation.plot.pie(
+    autopct="%1.1f%%",
+    labels = ["Polecam", "Nie polecam", "Nie mam zdania"],
+    colors = ["green", "red", "gray"]
+)
+
+plt.savefig(f"./figures/{product_code}_recommendation.png")
+plt.close()
